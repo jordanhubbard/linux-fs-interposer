@@ -39,7 +39,6 @@ int main(int ac, char * const av[])
 	if (!pid) {
 		setenv("NVIDIA_TRACELOG_FILE", trace, 1);
 		setenv("LD_PRELOAD", path, 1);
-		(void)setsid();
 		execv(av[2], av + 2);
 	} else {
 		int i = waitpid(pid, &status, 0);

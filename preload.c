@@ -82,16 +82,49 @@ ssize_t readlink(const char *path, char *buf, size_t bufsiz)
 	return res;
 }
 
-int execve(const char *path, char *const argv[], char *const envp[])
+int execle(const char *path, const char *arg, ...)
 {
-	/* execve() is special in that we need to log first, not afterwards, for obvious reasons */
-	emit_traceline("execve", "s v", path, argv);
-	return ((real_execve_t)dlsym(RTLD_NEXT, "execve"))(path, argv, envp);
+	va_list ap;
+	char *cp, *argv[255];	/* totally fudged limit */
+	char *const *envp;
+	int i = 0;
+	
+	va_start(ap, arg);
+	argv[i++] = (char *)arg;
+	while (cp = va_arg(ap, char *))
+		argv[i++] = cp;
+	argv[i] = NULL;
+	envp = va_arg(ap, char **);
+	va_end(ap);
+	emit_traceline("execle", "s v v", path, argv, envp);
+	return ((real_execve_t)dlsym(RTLD_NEXT, "execve"))(path, (char *const *)argv, envp);
 }
 
 int execl(const char *path, const char *arg, ...)
 {
-	/* execl() is special in that we need to log first, not afterwards, for obvious reasons */
-	emit_traceline("execl", "s s", path, arg);
-	return ((real_execl_t)dlsym(RTLD_NEXT, "execl"))(path, arg, NULL);
+	va_list ap;
+	char *cp, *argv[255];	/* totally fudged limit */
+	int i = 0;
+	
+	va_start(ap, arg);
+	argv[i++] = (char *)arg;
+	while (cp = va_arg(ap, char *))
+		argv[i++] = cp;
+	argv[i] = NULL;
+	va_end(ap);
+	emit_traceline("execl", "s v", path, argv);
+	return ((real_execvp_t)dlsym(RTLD_NEXT, "execvp"))(path, (char *const *)argv);
+}
+
+int execvp(const char *file, char *const argv[])
+{
+	emit_traceline("execvp", "s v", file, argv);
+	return ((real_execvp_t)dlsym(RTLD_NEXT, "execvp"))(file, argv);
+}
+
+/* execve() is the magical underlying implementation of all exec(2)s in Linux */
+int execve(const char *path, char *const argv[], char *const envp[])
+{
+	emit_traceline("execve", "s v", path, argv);
+	return ((real_execve_t)dlsym(RTLD_NEXT, "execve"))(path, argv, envp);
 }

@@ -25,6 +25,19 @@
  *	NVIDIA_TRACELOG_FILE	Absolute path to trace file to be opened and appended to.
  */
 
+static int _trace_fd;
+
+
+typedef int (*real_close_t)(int fd);
+
+/* Protect our magical fd from being closed */
+int close(int fd)
+{
+	if (fd != 2 || fd == _trace_fd)
+		return EBADF;
+	return ((real_close_t)dlsym(RTLD_NEXT, "close"))(fd);
+}
+
 static int _setup(void)
 {
 	int fd;
@@ -46,10 +59,9 @@ static void trace_output(char *buffer, size_t len)
 {
 	int i;
 
-	static int trace_fd = 0;
-	if (!trace_fd)
-		trace_fd = _setup();
-	i = write(trace_fd, buffer, len);
+	if (!_trace_fd)
+		_trace_fd = _setup();
+	i = write(_trace_fd, buffer, len);
 	if (i == -1) {
 		fprintf(stderr, "FATAL: Unable to write to trace file - %s.  Aborting.\n", strerror(errno));
 		abort();
@@ -64,7 +76,7 @@ void emit_traceline(char *func_name, ...)
 	va_list ap;
 	char *fmt, *str;
 	int len, arg;
-	char c;
+	char **vec;
 	time_t raw_time;
 	struct tm *tm_info;
 	
@@ -105,9 +117,13 @@ void emit_traceline(char *func_name, ...)
 			trace_output(buffer, strlen(buffer));
 			break;
 			
-		case 'c':
-			c = va_arg(ap, int);
-			trace_output(&c, 1);
+		case 'v':
+			vec = va_arg(ap, char **);
+			while (*vec) {
+				trace_output(" ", 1);
+				trace_output(*vec, strlen(*vec));
+				++vec;
+			}
 			break;
 
 		default:

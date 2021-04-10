@@ -10,8 +10,8 @@ runner: runner.c
 sample: sample.c
 	cc sample.c ${CFLAGS} -o sample
 
-preload.so: preload.c
+preload.so: preload.c utils.c utils.h 
 	cc -shared -fPIC ${CFLAGS} -o preload.so preload.c utils.c -ldl
 
 clean:
-	rm -f preload.so sample runner
+	rm -f preload.so sample runner tracefile
