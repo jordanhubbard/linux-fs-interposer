@@ -122,7 +122,6 @@ int execvp(const char *file, char *const argv[])
 	return ((real_execvp_t)dlsym(RTLD_NEXT, "execvp"))(file, argv);
 }
 
-/* execve() is the magical underlying implementation of all exec(2)s in Linux */
 int execve(const char *path, char *const argv[], char *const envp[])
 {
 	emit_traceline("execve", "s v", path, argv);

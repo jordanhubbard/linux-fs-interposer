@@ -15,36 +15,44 @@
  * but it works fine as a basic POC.
  */
 
-int main(int ac, char * const av[])
+int main(int argc, char * const argv[], char * const envp[])
 {
-	char path[PATH_MAX + 1];
-	char trace[PATH_MAX + 1];
+	char cwd[PATH_MAX];
+	char preload_path[PATH_MAX];
+	char tracefile_path[PATH_MAX];
 	int status;
 	pid_t pid;
 	
-	if (ac < 2) {
-		fprintf(stderr, "Usage: %s outfilename cmd [args]\n", av[0]);
+	if (argc < 2) {
+		fprintf(stderr, "Usage: %s outfilename cmd [args]\n", argv[0]);
 		exit(1);
 	}
-	(void)getcwd(path, PATH_MAX);
-	strncat(path, "/preload.so", PATH_MAX);
-	if (av[1][0] != '/') {
-		(void)getcwd(trace, PATH_MAX);
-		strncpy(trace, "/", PATH_MAX);
-		strncpy(trace, av[1], PATH_MAX);
-	} else {
-		strncpy(trace, av[1], PATH_MAX);
-	}
+	(void)getcwd(cwd, PATH_MAX);
+
+	sprintf(preload_path, "%s/preload.so", cwd);
+
+	if (argv[1][0] != '/')
+		sprintf(tracefile_path, "%s/%s", cwd, argv[1]);
+	else
+		strcpy(tracefile_path, argv[1]);
+
 	pid = fork();
 	if (!pid) {
-		setenv("NVIDIA_TRACELOG_FILE", trace, 1);
-		setenv("LD_PRELOAD", path, 1);
-		execvp(av[2], av + 2);
+		char *av[argc];
+		int i = 0;
+
+		for (i = 2; i < argc; i++)
+			av[i] = argv[i];
+		av[i] = NULL;
+		setenv("NVIDIA_TRACELOG_FILE", tracefile_path, 1);
+		setenv("LD_PRELOAD", preload_path, 1);
+		
+		execvp(argv[2], av);
 	} else {
 		int i = waitpid(pid, &status, 0);
 
 		if (i == -1 || !WIFEXITED(status)) {
-			fprintf(stderr, "runner: child process exited abnormally\n");
+			fprintf(stderr, "runner: child process exited abnormally: %d\n", status);
 			return 1;
 		}
 		return 0;

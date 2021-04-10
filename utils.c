@@ -81,7 +81,7 @@ void emit_traceline(char *func_name, ...)
 	struct tm *tm_info;
 	
 	va_start(ap, func_name);
-	snprintf(buffer, BUFFER_SIZE, "pid %d, ", getpid());
+	sprintf(buffer, "pid %d, ", getpid());
 	trace_output(buffer, strlen(buffer));
 
 	/*
@@ -91,8 +91,7 @@ void emit_traceline(char *func_name, ...)
 	time(&raw_time);
 	tm_info = gmtime(&raw_time);
 
-	snprintf(buffer, BUFFER_SIZE, "time %d:%d:%d, ", tm_info->tm_hour, tm_info->tm_min,
-		 tm_info->tm_sec);
+	sprintf(buffer, "time %d:%d:%d, ", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec);
 	trace_output(buffer, strlen(buffer));
 	trace_output(func_name, strlen(func_name));
 	trace_output(" ", 1);
