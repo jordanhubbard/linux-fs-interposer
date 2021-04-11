@@ -47,10 +47,16 @@ static int _setup(void)
 		fprintf(stderr, "Unable to find NVIDIA_TRACELOG_FILE in environment.  Aborting.\n");
 		abort();
 	}
-	fd = ((real_open_t)dlsym(RTLD_NEXT, "open"))(path, O_CREAT | O_WRONLY | O_APPEND, DEFAULT_FILEMODE);
-	if (fd == -1) {
-		fprintf(stderr, "Unable to open %s for append access.  Aborting.\n", path);
-		abort();
+	/* Check for stderr convention */
+	if (path[0] == '-') {
+		fprintf(stderr, "I am using stderr!\n");
+		fd = 2;
+	} else {
+		fd = ((real_open_t)dlsym(RTLD_NEXT, "open"))(path, O_CREAT | O_WRONLY | O_APPEND, DEFAULT_FILEMODE);
+		if (fd == -1) {
+			fprintf(stderr, "Unable to open %s for append access.  Aborting.\n", path);
+			abort();
+		}
 	}
 	return fd;
 }

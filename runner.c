@@ -15,46 +15,51 @@
  * but it works fine as a basic POC.
  */
 
+/* Set to 1 if you want the runner to fork(2) before exec(2)ing the process */
+#define _FORK_CHILD	0
+
 int main(int argc, char * const argv[], char * const envp[])
 {
 	char _cwd[PATH_MAX], *cwd;
 	char preload_path[PATH_MAX];
 	char tracefile_path[PATH_MAX];
 	int status;
+	char prefix;
 	pid_t pid;
 	
-	if (argc < 2) {
-		fprintf(stderr, "Usage: %s outfilename cmd [args]\n", argv[0]);
+	if (argc < 3) {
+		fprintf(stderr, "Usage: %s outfile command [args]\n", argv[0]);
 		exit(1);
 	}
 	cwd = getcwd(_cwd, PATH_MAX);
 
 	snprintf(preload_path, PATH_MAX, "%s/preload.so", cwd);
-
-	if (argv[1][0] != '/')
+	prefix = argv[1][0];
+	
+	/* Check for existing absolute path or -, which means output to stderr */
+	if (prefix != '/' && prefix != '-')
 		snprintf(tracefile_path, PATH_MAX, "%s/%s", cwd, argv[1]);
 	else
 		strncpy(tracefile_path, argv[1], PATH_MAX);
 
+#if _FORK_CHILD
 	pid = fork();
-	if (!pid) {
-		char *av[argc];
-		int i = 0;
-
-		for (i = 2; i < argc; i++)
-			av[i] = argv[i];
-		av[i] = NULL;
+	if (!pid)
+#endif
+	{
 		setenv("NVIDIA_TRACELOG_FILE", tracefile_path, 1);
 		setenv("LD_PRELOAD", preload_path, 1);
-		
-		execvp(argv[2], av);
-	} else {
+		execvp(argv[2], &argv[2]);
+	}
+#if _FORK_CHILD
+	else {
 		int i = waitpid(pid, &status, 0);
 
 		if (i == -1 || !WIFEXITED(status)) {
 			fprintf(stderr, "runner: child process exited abnormally: %d\n", status);
 			return 1;
 		}
-		return 0;
 	}
+#endif
+	return 0;
 }

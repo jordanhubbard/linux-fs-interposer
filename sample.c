@@ -4,6 +4,7 @@
 #include <string.h>
 #include <limits.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -63,8 +64,12 @@ int main(int ac, const char *av[])
 	/* test the execve() interceptor */
 	if (!(pid = fork()))
 		execl(_EXEC_TEST_FILE, _EXEC_TEST_FILE, "I like cats", NULL);
-	else
-		waitpid(pid, NULL, 0);
+	else {
+		int status;
+		
+		/* should check return value and status but who cares */
+		waitpid(pid, &status, 0);
+	}
 	return 0;
 }
 
