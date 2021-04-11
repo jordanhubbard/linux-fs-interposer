@@ -17,7 +17,7 @@
 
 int main(int argc, char * const argv[], char * const envp[])
 {
-	char cwd[PATH_MAX];
+	char _cwd[PATH_MAX], *cwd;
 	char preload_path[PATH_MAX];
 	char tracefile_path[PATH_MAX];
 	int status;
@@ -27,14 +27,14 @@ int main(int argc, char * const argv[], char * const envp[])
 		fprintf(stderr, "Usage: %s outfilename cmd [args]\n", argv[0]);
 		exit(1);
 	}
-	(void)getcwd(cwd, PATH_MAX);
+	cwd = getcwd(_cwd, PATH_MAX);
 
-	sprintf(preload_path, "%s/preload.so", cwd);
+	snprintf(preload_path, PATH_MAX, "%s/preload.so", cwd);
 
 	if (argv[1][0] != '/')
-		sprintf(tracefile_path, "%s/%s", cwd, argv[1]);
+		snprintf(tracefile_path, PATH_MAX, "%s/%s", cwd, argv[1]);
 	else
-		strcpy(tracefile_path, argv[1]);
+		strncpy(tracefile_path, argv[1], PATH_MAX);
 
 	pid = fork();
 	if (!pid) {

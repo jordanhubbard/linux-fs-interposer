@@ -119,8 +119,8 @@ void emit_traceline(char *func_name, ...)
 		case 'v':
 			vec = va_arg(ap, char **);
 			while (*vec) {
-				trace_output(" ", 1);
 				trace_output(*vec, strlen(*vec));
+				trace_output(" ", 1);
 				++vec;
 			}
 			break;
