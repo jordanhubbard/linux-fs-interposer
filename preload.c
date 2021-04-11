@@ -89,8 +89,9 @@ int execle(const char *path, const char *arg, ...)
 	char *const *envp;
 	int i = 0;
 	
-	va_start(ap, arg);
+	argv[i++] = (char *)path;
 	argv[i++] = (char *)arg;
+	va_start(ap, arg);
 	while (cp = va_arg(ap, char *))
 		argv[i++] = cp;
 	argv[i] = NULL;
@@ -106,14 +107,15 @@ int execl(const char *path, const char *arg, ...)
 	char *cp, *argv[255];	/* totally fudged limit */
 	int i = 0;
 	
-	va_start(ap, arg);
+	argv[i++] = (char *)path;
 	argv[i++] = (char *)arg;
+	va_start(ap, arg);
 	while (cp = va_arg(ap, char *))
 		argv[i++] = cp;
 	argv[i] = NULL;
 	va_end(ap);
 	emit_traceline("execl", "s v", path, argv);
-	return ((real_execvp_t)dlsym(RTLD_NEXT, "execvp"))(path, (char *const *)argv);
+	return ((real_execv_t)dlsym(RTLD_NEXT, "execv"))(path, (char *const *)argv);
 }
 
 int execvp(const char *file, char *const argv[])

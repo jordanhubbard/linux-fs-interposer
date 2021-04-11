@@ -20,7 +20,7 @@
 
 int main(int argc, char * const argv[], char * const envp[])
 {
-	char _cwd[PATH_MAX], *cwd;
+	char _cwd[PATH_MAX], *cwd, *cp;
 	char preload_path[PATH_MAX];
 	char tracefile_path[PATH_MAX];
 	int status;
@@ -32,15 +32,23 @@ int main(int argc, char * const argv[], char * const envp[])
 		exit(1);
 	}
 	cwd = getcwd(_cwd, PATH_MAX);
-
-	snprintf(preload_path, PATH_MAX, "%s/preload.so", cwd);
-	prefix = argv[1][0];
-	
-	/* Check for existing absolute path or -, which means output to stderr */
-	if (prefix != '/' && prefix != '-')
-		snprintf(tracefile_path, PATH_MAX, "%s/%s", cwd, argv[1]);
-	else
-		strncpy(tracefile_path, argv[1], PATH_MAX);
+	cp = getenv("NVIDIA_TRACELOG_FILE");
+	if (!cp) {
+		prefix = argv[1][0];
+		/* Check for existing absolute path or -, which means output to stderr */
+		if (prefix != '/' && prefix != '-')
+			snprintf(tracefile_path, PATH_MAX, "%s/%s", cwd, argv[1]);
+		else
+			strncpy(tracefile_path, argv[1], PATH_MAX);
+	} else {
+		strncpy(tracefile_path, cp, PATH_MAX);
+	}
+	cp = getenv("LD_PRELOAD");
+	if (!cp) {
+		snprintf(preload_path, PATH_MAX, "%s/preload.so", cwd);
+	} else {
+		strncpy(preload_path, cp, PATH_MAX);
+	}
 
 #if _FORK_CHILD
 	pid = fork();
